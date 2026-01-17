@@ -35,7 +35,7 @@
     }
 
     .wrap{
-      width:min(920px, 100%);
+      width:min(960px, 100%);
       display:grid;
       gap:16px;
     }
@@ -64,7 +64,7 @@
       margin:0;
       font-size: 14px;
       color:var(--muted);
-      max-width: 520px;
+      max-width: 560px;
       line-height:1.35;
     }
 
@@ -184,7 +184,7 @@
     }
 
     .result{
-      margin-top: 12px;
+      margin-top: 10px;
       min-height: 44px;
       display:flex;
       align-items:center;
@@ -194,7 +194,7 @@
       line-height:1.3;
     }
     .hint{
-      margin-top: 6px;
+      margin-top: 2px;
       color: var(--muted);
       font-size: 13px;
       line-height:1.35;
@@ -266,6 +266,56 @@
     .good{ color: #6CFF8D; }
     .mid{ color: #FFC96B; }
     .bad{ color: #FF6B6B; }
+
+    /* Percentile bar */
+    .pctWrap{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+    .pctTitle{
+      display:flex;
+      justify-content:space-between;
+      align-items:baseline;
+      gap:10px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .pctTitle strong{
+      color: var(--text);
+      font-weight: 900;
+      font-size: 14px;
+    }
+    .bar{
+      position: relative;
+      height: 14px;
+      border-radius: 999px;
+      overflow:hidden;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.05);
+      display:flex;
+    }
+    .seg{ height:100%; }
+    .seg.s1{ width: 5%;  background: rgba(108,255,141,.55); }
+    .seg.s2{ width: 5%;  background: rgba(108,255,141,.38); }
+    .seg.s3{ width: 15%; background: rgba(255,201,107,.35); }
+    .seg.s4{ width: 25%; background: rgba(255,201,107,.18); }
+    .seg.s5{ width: 50%; background: rgba(255,107,107,.12); }
+
+    .marker{
+      position:absolute;
+      top:-4px;
+      width: 2px;
+      height: 22px;
+      background: rgba(233,236,255,.92);
+      box-shadow: 0 0 10px rgba(233,236,255,.55);
+      border-radius: 2px;
+    }
+    .pctNote{
+      font-size: 12px;
+      color: rgba(233,236,255,.75);
+      line-height: 1.35;
+    }
   </style>
 </head>
 
@@ -276,7 +326,7 @@
         <h1 class="title">Stop the Time</h1>
         <p class="subtitle">
           3 režimy: <strong>10s</strong>, <strong>30s</strong>, a <strong>1440 min</strong> daily challenge.
-          Čím bližšie trafíš cieľ, tým lepšie.
+          Čím bližšie trafíš cieľ, tým vyššie sa (odhadom) dostaneš v percentiloch.
         </p>
       </div>
     </div>
@@ -329,6 +379,27 @@
           <div class="line"><span>Remaining</span><strong id="dailyRemaining">—</strong></div>
         </div>
 
+        <h3 style="margin-top:14px;">Compared to others</h3>
+        <div class="panel pctWrap">
+          <div class="pctTitle">
+            <span>Estimated percentile</span>
+            <strong id="pctText">—</strong>
+          </div>
+
+          <div class="bar" aria-label="percentile bar">
+            <div class="seg s1" title="Top 5%"></div>
+            <div class="seg s2" title="Top 10%"></div>
+            <div class="seg s3" title="Top 25%"></div>
+            <div class="seg s4" title="Top 50%"></div>
+            <div class="seg s5" title="Bottom 50%"></div>
+            <div class="marker" id="pctMarker" style="left:50%; display:none;"></div>
+          </div>
+
+          <div class="pctNote" id="pctNote">
+            Uses an estimated distribution (no real global stats yet).
+          </div>
+        </div>
+
         <div class="panel" style="margin-top:14px;">
           <div class="line"><span>Tip:</span><strong>najlepšie to funguje na mobile</strong></div>
           <div class="line"><span>Challenge:</span><strong>pod 0.050s je “INSANE”</strong></div>
@@ -337,7 +408,7 @@
 
       <div class="footer">
         <div>Made for fun. Zero tricks.</div>
-        <div id="version">v2</div>
+        <div id="version">v3</div>
       </div>
     </div>
   </div>
@@ -356,7 +427,7 @@
   let interval = null;
 
   // Daily persistence
-  const DAILY_KEY = "stt_daily_start_ms"; // saved as timestamp in ms
+  const DAILY_KEY = "stt_daily_start_ms";
 
   // ====== Elements ======
   const timerEl = document.getElementById("timer");
@@ -379,6 +450,11 @@
   const shareBtn = document.getElementById("shareBtn");
   const copyBtn = document.getElementById("copyBtn");
 
+  // Percentile UI
+  const pctText = document.getElementById("pctText");
+  const pctMarker = document.getElementById("pctMarker");
+  const pctNote = document.getElementById("pctNote");
+
   // ====== Helpers ======
   function fmt3(x){ return Number(x).toFixed(3); }
 
@@ -391,6 +467,17 @@
     if (interval) clearInterval(interval);
     interval = null;
     startTime = null;
+  }
+
+  function resetUI(){
+    resultEl.textContent = "";
+    hintEl.textContent = "";
+    shareRow.style.display = "none";
+
+    // reset percentile UI
+    pctText.textContent = "—";
+    pctMarker.style.display = "none";
+    pctNote.textContent = "Uses an estimated distribution (no real global stats yet).";
   }
 
   function setShare(diffStr, modeKey){
@@ -429,18 +516,72 @@
 
     resultEl.innerHTML = `<strong class="${cls}">${label}</strong> — Your error: <strong class="${cls}">${signed}s</strong>`;
     hintEl.textContent = (absDiff <= 0.150) ? "That’s close. One more try?" : "You can do better. One more try 🙂";
+
+    // Update estimated percentile + marker
+    updatePercentile(absDiff, currentMode.key);
   }
 
   function updateTimerDisplay(seconds){
     timerEl.textContent = fmt3(seconds);
   }
 
-  function resetUI(){
-    resultEl.textContent = "";
-    hintEl.textContent = "";
-    shareRow.style.display = "none";
+  // ====== Percentile model (ESTIMATED) ======
+  // Returns "Top X%" where smaller X is better.
+  // These thresholds are intentionally strict for 10s/30s, and relaxed for daily.
+  function estimateTopPercent(absErrorSeconds, modeKey){
+    // Each array item: [thresholdSeconds, topPercent]
+    const tables = {
+      t10: [
+        [0.005, 5],
+        [0.010, 10],
+        [0.020, 25],
+        [0.050, 50],
+        [0.100, 80],
+        [Infinity, 100]
+      ],
+      t30: [
+        [0.010, 5],
+        [0.020, 10],
+        [0.050, 25],
+        [0.100, 50],
+        [0.200, 80],
+        [Infinity, 100]
+      ],
+      daily: [
+        [5, 5],        // within 5 seconds after 24h
+        [15, 10],
+        [60, 25],
+        [300, 50],     // within 5 minutes
+        [900, 80],     // within 15 minutes
+        [Infinity, 100]
+      ]
+    };
+
+    const table = tables[modeKey] || tables.t10;
+    for (const [thr, pct] of table){
+      if (absErrorSeconds <= thr) return { top: pct, thr };
+    }
+    return { top: 100, thr: Infinity };
   }
 
+  function updatePercentile(absErrorSeconds, modeKey){
+    const est = estimateTopPercent(absErrorSeconds, modeKey);
+
+    pctText.textContent = `Top ${est.top}% (est.)`;
+
+    // Marker: map top% to bar position (0% at left = best, 100% at right = worst)
+    // We place marker at "top%" position.
+    const left = Math.min(100, Math.max(0, est.top));
+    pctMarker.style.left = `${left}%`;
+    pctMarker.style.display = "block";
+
+    // Note: show context
+    const modeName = modeKey === "t10" ? "10s" : (modeKey === "t30" ? "30s" : "Daily");
+    const unitHint = modeKey === "daily" ? "seconds" : "seconds";
+    pctNote.textContent = `Mode: ${modeName}. Estimated from simple thresholds (not real global stats yet).`;
+  }
+
+  // ====== Mode switching ======
   function setMode(mode){
     clearRun();
     resetUI();
@@ -453,11 +594,10 @@
       updateTimerDisplay(mode.targetSeconds);
       hintEl.textContent = "Click START. Wait. Click STOP.";
     } else {
-      // daily
       refreshDailyPanel();
       const hasDaily = !!localStorage.getItem(DAILY_KEY);
       btnStart.textContent = hasDaily ? "STOP DAILY" : "START DAILY";
-      updateTimerDisplay(hasDaily ? 0 : 0);
+      updateTimerDisplay(0);
       hintEl.textContent = hasDaily
         ? "Tomorrow: click STOP as close as possible to the same time."
         : "Click START DAILY. Come back tomorrow at the same time and click STOP.";
@@ -519,7 +659,6 @@
     btnStart.textContent = "START";
     startTime = null;
 
-    // auto-reset display after 1s
     setTimeout(() => {
       if (!startTime && currentMode.type === "timer") {
         updateTimerDisplay(currentMode.targetSeconds);
@@ -528,7 +667,6 @@
   }
 
   function startDaily(){
-    // Save the start timestamp (ms) - this defines the exact return time (tomorrow same time)
     localStorage.setItem(DAILY_KEY, String(Date.now()));
     resetUI();
     refreshDailyPanel();
@@ -547,17 +685,15 @@
     const now = Date.now();
     const targetMs = startMs + modes.daily.targetSeconds*1000;
 
-    const diffSeconds = (now - targetMs) / 1000; // can be negative if early
+    const diffSeconds = (now - targetMs) / 1000;
     const diffStr = diffSeconds.toFixed(3);
 
     scoreUI(diffStr);
     setShare(diffStr, "daily");
 
-    // End daily
     localStorage.removeItem(DAILY_KEY);
     refreshDailyPanel();
     btnStart.textContent = "START DAILY";
-
     hintEl.textContent = "Daily finished. Want to start a new one?";
   }
 
@@ -585,7 +721,6 @@
       updateTimerDisplay(currentMode.targetSeconds);
       hintEl.textContent = "Click START. Wait. Click STOP.";
     } else {
-      // reset daily state too
       localStorage.removeItem(DAILY_KEY);
       refreshDailyPanel();
       btnStart.textContent = "START DAILY";
@@ -594,13 +729,12 @@
     }
   };
 
-  // ====== Init ======
-  // Refresh daily countdown every second (only updates panel)
+  // Update daily countdown every second
   setInterval(() => {
     if (currentMode.key === "daily") refreshDailyPanel();
   }, 1000);
 
-  // Start on 10s mode
+  // Init
   setMode(modes.t10);
 </script>
 
