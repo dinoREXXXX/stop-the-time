@@ -1,124 +1,607 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="sk">
 <head>
-<meta charset="UTF-8" />
-<title>Stop the Time</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<style>
-  body{
-    font-family: Arial, sans-serif;
-    text-align:center;
-    margin-top: 15vh;
-  }
-  h2{
-    font-size: 20px;
-    font-weight: 600;
-    margin: 0 0 14px 0;
-  }
-  h1{
-    font-size: 72px;
-    margin: 0 0 22px 0;
-    letter-spacing: 1px;
-  }
-  button{
-    font-size: 22px;
-    padding: 12px 28px;
-    cursor: pointer;
-  }
-  #result{
-    font-size: 18px;
-    margin-top: 18px;
-    min-height: 24px;
-  }
-  #share{
-    margin-top: 12px;
-    font-size: 16px;
-    min-height: 20px;
-  }
-  #share a{
-    text-decoration: none;
-  }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Stop the Time</title>
+  <meta name="description" content="Stop the timer as close as possible to the target time. 10s, 30s, or a 24h daily challenge." />
+
+  <style>
+    :root{
+      --bg1:#0b1020;
+      --bg2:#141a33;
+      --card:#0f1630cc;
+      --card2:#0c1228cc;
+      --text:#e9ecff;
+      --muted:#aab2ffcc;
+      --border:#2a3566;
+      --shadow: 0 18px 60px rgba(0,0,0,.45);
+      --radius: 18px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      min-height:100vh;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      color:var(--text);
+      background:
+        radial-gradient(1200px 700px at 15% 10%, #2a3cff55, transparent 60%),
+        radial-gradient(1000px 700px at 85% 25%, #00d4ff33, transparent 60%),
+        linear-gradient(180deg, var(--bg1), var(--bg2));
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:24px;
+    }
+
+    .wrap{
+      width:min(920px, 100%);
+      display:grid;
+      gap:16px;
+    }
+
+    .top{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:16px;
+      flex-wrap:wrap;
+    }
+
+    .brand{
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+    }
+
+    .title{
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: .2px;
+      margin:0;
+    }
+    .subtitle{
+      margin:0;
+      font-size: 14px;
+      color:var(--muted);
+      max-width: 520px;
+      line-height:1.35;
+    }
+
+    .card{
+      background: linear-gradient(180deg, var(--card), var(--card2));
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+
+    .main{
+      display:grid;
+      grid-template-columns: 1.05fr .95fr;
+      gap:16px;
+    }
+
+    @media (max-width: 860px){
+      .main{grid-template-columns: 1fr;}
+    }
+
+    .left, .right{ padding:18px; }
+
+    .modes{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+
+    .chip{
+      border:1px solid var(--border);
+      color:var(--text);
+      background: rgba(255,255,255,.04);
+      padding:10px 12px;
+      border-radius: 14px;
+      cursor:pointer;
+      user-select:none;
+      transition: transform .06s ease, background .2s ease, border-color .2s ease;
+      font-size: 14px;
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+    .chip:hover{ transform: translateY(-1px); }
+    .chip.active{
+      border-color:#6b79ff;
+      background: rgba(107,121,255,.18);
+    }
+    .chip .tag{
+      font-size: 12px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      border:1px solid rgba(255,255,255,.12);
+      color: var(--muted);
+      background: rgba(255,255,255,.04);
+    }
+
+    .timerBox{
+      margin-top: 18px;
+      padding: 18px;
+      border-radius: 16px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.04);
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      align-items:center;
+    }
+
+    .timerLabel{
+      font-size: 13px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .12em;
+    }
+
+    .timer{
+      font-weight: 900;
+      font-size: clamp(52px, 7vw, 84px);
+      letter-spacing: 1px;
+      margin:0;
+    }
+
+    .row{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      justify-content:center;
+      align-items:center;
+      margin-top: 6px;
+    }
+
+    .btn{
+      border: 1px solid rgba(255,255,255,.16);
+      background: rgba(255,255,255,.08);
+      color: var(--text);
+      padding: 12px 16px;
+      border-radius: 14px;
+      cursor:pointer;
+      font-weight: 700;
+      font-size: 14px;
+      transition: transform .06s ease, background .2s ease, border-color .2s ease, opacity .2s ease;
+      user-select:none;
+      min-width: 140px;
+    }
+    .btn:hover{ transform: translateY(-1px); background: rgba(255,255,255,.12); }
+    .btn.primary{
+      background: linear-gradient(90deg, #6b79ff, #00d4ff);
+      border-color: transparent;
+      color:#0b1020;
+    }
+    .btn.primary:hover{ filter: brightness(1.03); }
+    .btn:disabled{
+      opacity:.45;
+      cursor:not-allowed;
+      transform:none !important;
+    }
+
+    .result{
+      margin-top: 12px;
+      min-height: 44px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      text-align:center;
+      font-size: 16px;
+      line-height:1.3;
+    }
+    .hint{
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height:1.35;
+      text-align:center;
+      min-height: 18px;
+    }
+
+    .right h3{
+      margin: 2px 0 10px 0;
+      font-size: 16px;
+      letter-spacing: .2px;
+    }
+
+    .panel{
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.04);
+      border-radius: 16px;
+      padding: 14px;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+
+    .line{
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .line strong{ color: var(--text); font-weight: 800; }
+
+    .linkRow{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top: 10px;
+    }
+
+    .a{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.06);
+      color: var(--text);
+      text-decoration:none;
+      font-weight: 700;
+      font-size: 13px;
+      transition: transform .06s ease, background .2s ease;
+    }
+    .a:hover{ transform: translateY(-1px); background: rgba(255,255,255,.10); }
+
+    .footer{
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+      padding: 14px 18px;
+      color: rgba(233,236,255,.75);
+      font-size: 12px;
+      border-top: 1px solid rgba(255,255,255,.08);
+      background: rgba(255,255,255,.02);
+    }
+
+    /* score colors */
+    .good{ color: #6CFF8D; }
+    .mid{ color: #FFC96B; }
+    .bad{ color: #FF6B6B; }
+  </style>
 </head>
 
 <body>
+  <div class="wrap">
+    <div class="top">
+      <div class="brand">
+        <h1 class="title">Stop the Time</h1>
+        <p class="subtitle">
+          3 režimy: <strong>10s</strong>, <strong>30s</strong>, a <strong>1440 min</strong> daily challenge.
+          Čím bližšie trafíš cieľ, tým lepšie.
+        </p>
+      </div>
+    </div>
 
-<h2>Stop the Time at exactly</h2>
-<h1 id="timer">10.000</h1>
+    <div class="card main">
+      <div class="left">
+        <div class="modes">
+          <button class="chip active" id="mode10" type="button">
+            10s <span class="tag">quick</span>
+          </button>
+          <button class="chip" id="mode30" type="button">
+            30s <span class="tag">focus</span>
+          </button>
+          <button class="chip" id="modeDaily" type="button">
+            1440 min <span class="tag">daily</span>
+          </button>
+        </div>
 
-<button id="btn">START</button>
-<p id="result"></p>
-<p id="share"></p>
+        <div class="timerBox">
+          <div class="timerLabel" id="timerLabel">Target: 10.000 s</div>
+          <div class="timer" id="timer">10.000</div>
+
+          <div class="row">
+            <button class="btn primary" id="btnStart" type="button">START</button>
+            <button class="btn" id="btnReset" type="button">RESET</button>
+          </div>
+
+          <div class="result" id="result"></div>
+          <div class="hint" id="hint"></div>
+
+          <div class="linkRow" id="shareRow" style="display:none;">
+            <a class="a" id="shareBtn" href="#" target="_blank" rel="noopener noreferrer">Share score</a>
+            <a class="a" id="copyBtn" href="#" role="button">Copy link</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="right">
+        <h3>How it works</h3>
+        <div class="panel">
+          <div class="line"><span>10s / 30s</span><strong>STOP čo najbližšie k cieľu</strong></div>
+          <div class="line"><span>Daily (1440 min)</span><strong>Start → zajtra Stop v rovnakom čase</strong></div>
+          <div class="line"><span>Scoring</span><strong>INSANE ≤ 0.050s • Nice ≤ 0.150s</strong></div>
+        </div>
+
+        <h3 style="margin-top:14px;">Daily status</h3>
+        <div class="panel">
+          <div class="line"><span>Daily started</span><strong id="dailyStarted">No</strong></div>
+          <div class="line"><span>Return at</span><strong id="dailyReturn">—</strong></div>
+          <div class="line"><span>Remaining</span><strong id="dailyRemaining">—</strong></div>
+        </div>
+
+        <div class="panel" style="margin-top:14px;">
+          <div class="line"><span>Tip:</span><strong>najlepšie to funguje na mobile</strong></div>
+          <div class="line"><span>Challenge:</span><strong>pod 0.050s je “INSANE”</strong></div>
+        </div>
+      </div>
+
+      <div class="footer">
+        <div>Made for fun. Zero tricks.</div>
+        <div id="version">v2</div>
+      </div>
+    </div>
+  </div>
 
 <script>
+  // ====== State ======
+  const modes = {
+    t10:   { key: "t10",   label: "Target: 10.000 s",   targetSeconds: 10.000, type: "timer" },
+    t30:   { key: "t30",   label: "Target: 30.000 s",   targetSeconds: 30.000, type: "timer" },
+    daily: { key: "daily", label: "Daily: 1440 min",     targetSeconds: 1440*60, type: "daily" } // 24h
+  };
+
+  let currentMode = modes.t10;
+
   let startTime = null;
   let interval = null;
-  const target = 10.000;
 
+  // Daily persistence
+  const DAILY_KEY = "stt_daily_start_ms"; // saved as timestamp in ms
+
+  // ====== Elements ======
   const timerEl = document.getElementById("timer");
-  const btn = document.getElementById("btn");
+  const timerLabelEl = document.getElementById("timerLabel");
   const resultEl = document.getElementById("result");
-  const shareEl = document.getElementById("share");
+  const hintEl = document.getElementById("hint");
 
-  function setScoreUI(diffStr) {
+  const btnStart = document.getElementById("btnStart");
+  const btnReset = document.getElementById("btnReset");
+
+  const mode10 = document.getElementById("mode10");
+  const mode30 = document.getElementById("mode30");
+  const modeDaily = document.getElementById("modeDaily");
+
+  const dailyStartedEl = document.getElementById("dailyStarted");
+  const dailyReturnEl = document.getElementById("dailyReturn");
+  const dailyRemainingEl = document.getElementById("dailyRemaining");
+
+  const shareRow = document.getElementById("shareRow");
+  const shareBtn = document.getElementById("shareBtn");
+  const copyBtn = document.getElementById("copyBtn");
+
+  // ====== Helpers ======
+  function fmt3(x){ return Number(x).toFixed(3); }
+
+  function setActiveChip(active){
+    [mode10, mode30, modeDaily].forEach(b => b.classList.remove("active"));
+    active.classList.add("active");
+  }
+
+  function clearRun(){
+    if (interval) clearInterval(interval);
+    interval = null;
+    startTime = null;
+  }
+
+  function setShare(diffStr, modeKey){
+    const signed = (Number(diffStr) >= 0 ? "+" : "") + diffStr;
+    const url = location.href.split("#")[0];
+    const text =
+      modeKey === "daily"
+        ? `Daily challenge: my error was ${signed}s. Can you beat me? ${url}`
+        : `Stop the timer: my error was ${signed}s on ${modeKey === "t10" ? "10s" : "30s"} mode. ${url}`;
+
+    shareBtn.href = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
+    shareRow.style.display = "flex";
+
+    copyBtn.onclick = async (e) => {
+      e.preventDefault();
+      try{
+        await navigator.clipboard.writeText(url);
+        hintEl.textContent = "Link copied ✅";
+        setTimeout(()=>{ if(hintEl.textContent==="Link copied ✅") hintEl.textContent=""; }, 1200);
+      }catch{
+        hintEl.textContent = "Copy not available (try Ctrl+C) ❗";
+      }
+    };
+  }
+
+  function scoreUI(diffStr){
     const diffNum = Number(diffStr);
     const absDiff = Math.abs(diffNum);
 
-    let color = "red";
+    let cls = "bad";
     let label = "Try again";
+    if (absDiff <= 0.050) { cls = "good"; label = "INSANE"; }
+    else if (absDiff <= 0.150) { cls = "mid"; label = "Nice"; }
 
-    if (absDiff <= 0.050) {
-      color = "green";
-      label = "INSANE";
-    } else if (absDiff <= 0.150) {
-      color = "orange";
-      label = "Nice";
-    }
+    const signed = (diffNum >= 0 ? "+" : "") + diffStr;
 
-    resultEl.innerHTML = `
-      <strong style="color:${color}">
-        ${label} – Your error: ${diffNum >= 0 ? "+" : ""}${diffStr} s
-      </strong>
-    `;
-
-    const shareText = `I stopped the timer with an error of ${diffNum >= 0 ? "+" : ""}${diffStr}s. Can you beat me? ${location.href}`;
-    shareEl.innerHTML =
-      `<a href="https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}" target="_blank" rel="noopener noreferrer">
-        Share your score
-      </a>`;
+    resultEl.innerHTML = `<strong class="${cls}">${label}</strong> — Your error: <strong class="${cls}">${signed}s</strong>`;
+    hintEl.textContent = (absDiff <= 0.150) ? "That’s close. One more try?" : "You can do better. One more try 🙂";
   }
 
-  btn.onclick = () => {
-    if (!startTime) {
-      // START
-      startTime = performance.now();
-      btn.textContent = "STOP";
-      resultEl.textContent = "";
-      shareEl.textContent = "";
-      timerEl.textContent = "0.000";
+  function updateTimerDisplay(seconds){
+    timerEl.textContent = fmt3(seconds);
+  }
 
-      interval = setInterval(() => {
-        const t = (performance.now() - startTime) / 1000;
-        timerEl.textContent = t.toFixed(3);
-      }, 10);
+  function resetUI(){
+    resultEl.textContent = "";
+    hintEl.textContent = "";
+    shareRow.style.display = "none";
+  }
 
+  function setMode(mode){
+    clearRun();
+    resetUI();
+    currentMode = mode;
+    timerLabelEl.textContent = mode.label;
+
+    if (mode.type === "timer"){
+      btnStart.textContent = "START";
+      btnStart.disabled = false;
+      updateTimerDisplay(mode.targetSeconds);
+      hintEl.textContent = "Click START. Wait. Click STOP.";
     } else {
-      // STOP
-      clearInterval(interval);
-      const finalTime = (performance.now() - startTime) / 1000;
-      const diffStr = (finalTime - target).toFixed(3);
+      // daily
+      refreshDailyPanel();
+      const hasDaily = !!localStorage.getItem(DAILY_KEY);
+      btnStart.textContent = hasDaily ? "STOP DAILY" : "START DAILY";
+      updateTimerDisplay(hasDaily ? 0 : 0);
+      hintEl.textContent = hasDaily
+        ? "Tomorrow: click STOP as close as possible to the same time."
+        : "Click START DAILY. Come back tomorrow at the same time and click STOP.";
+    }
+  }
 
-      setScoreUI(diffStr);
+  // ====== Daily ======
+  function refreshDailyPanel(){
+    const startMsStr = localStorage.getItem(DAILY_KEY);
+    if (!startMsStr){
+      dailyStartedEl.textContent = "No";
+      dailyReturnEl.textContent = "—";
+      dailyRemainingEl.textContent = "—";
+      return;
+    }
 
-      btn.textContent = "START";
-      startTime = null;
+    const startMs = Number(startMsStr);
+    const now = Date.now();
+    const returnMs = startMs + modes.daily.targetSeconds*1000;
+    const remainingMs = Math.max(0, returnMs - now);
 
-      // Auto-reset display back to 10.000 after 1s (feels cleaner)
-      setTimeout(() => {
-        if (!startTime) timerEl.textContent = "10.000";
-      }, 1000);
+    dailyStartedEl.textContent = "Yes";
+    dailyReturnEl.textContent = new Date(returnMs).toLocaleString();
+
+    if (remainingMs === 0){
+      dailyRemainingEl.textContent = "Ready ✅";
+    } else {
+      const totalSec = Math.floor(remainingMs/1000);
+      const h = Math.floor(totalSec/3600);
+      const m = Math.floor((totalSec%3600)/60);
+      const s = totalSec%60;
+      dailyRemainingEl.textContent = `${h}h ${m}m ${s}s`;
+    }
+  }
+
+  // ====== Game logic ======
+  function startTimerMode(){
+    startTime = performance.now();
+    btnStart.textContent = "STOP";
+    resetUI();
+    updateTimerDisplay(0);
+
+    interval = setInterval(() => {
+      const t = (performance.now() - startTime) / 1000;
+      updateTimerDisplay(t);
+    }, 10);
+  }
+
+  function stopTimerMode(){
+    clearInterval(interval);
+    interval = null;
+
+    const finalTime = (performance.now() - startTime) / 1000;
+    const diffStr = (finalTime - currentMode.targetSeconds).toFixed(3);
+
+    scoreUI(diffStr);
+    setShare(diffStr, currentMode.key);
+
+    btnStart.textContent = "START";
+    startTime = null;
+
+    // auto-reset display after 1s
+    setTimeout(() => {
+      if (!startTime && currentMode.type === "timer") {
+        updateTimerDisplay(currentMode.targetSeconds);
+      }
+    }, 1000);
+  }
+
+  function startDaily(){
+    // Save the start timestamp (ms) - this defines the exact return time (tomorrow same time)
+    localStorage.setItem(DAILY_KEY, String(Date.now()));
+    resetUI();
+    refreshDailyPanel();
+    btnStart.textContent = "STOP DAILY";
+    hintEl.textContent = "Daily started ✅ Come back tomorrow at the same time and click STOP.";
+  }
+
+  function stopDaily(){
+    const startMsStr = localStorage.getItem(DAILY_KEY);
+    if (!startMsStr){
+      hintEl.textContent = "No daily challenge started yet.";
+      return;
+    }
+
+    const startMs = Number(startMsStr);
+    const now = Date.now();
+    const targetMs = startMs + modes.daily.targetSeconds*1000;
+
+    const diffSeconds = (now - targetMs) / 1000; // can be negative if early
+    const diffStr = diffSeconds.toFixed(3);
+
+    scoreUI(diffStr);
+    setShare(diffStr, "daily");
+
+    // End daily
+    localStorage.removeItem(DAILY_KEY);
+    refreshDailyPanel();
+    btnStart.textContent = "START DAILY";
+
+    hintEl.textContent = "Daily finished. Want to start a new one?";
+  }
+
+  // ====== Events ======
+  mode10.onclick = () => { setActiveChip(mode10); setMode(modes.t10); };
+  mode30.onclick = () => { setActiveChip(mode30); setMode(modes.t30); };
+  modeDaily.onclick = () => { setActiveChip(modeDaily); setMode(modes.daily); };
+
+  btnStart.onclick = () => {
+    if (currentMode.type === "timer"){
+      if (!startTime) startTimerMode();
+      else stopTimerMode();
+    } else {
+      const hasDaily = !!localStorage.getItem(DAILY_KEY);
+      if (!hasDaily) startDaily();
+      else stopDaily();
     }
   };
+
+  btnReset.onclick = () => {
+    clearRun();
+    resetUI();
+    if (currentMode.type === "timer"){
+      btnStart.textContent = "START";
+      updateTimerDisplay(currentMode.targetSeconds);
+      hintEl.textContent = "Click START. Wait. Click STOP.";
+    } else {
+      // reset daily state too
+      localStorage.removeItem(DAILY_KEY);
+      refreshDailyPanel();
+      btnStart.textContent = "START DAILY";
+      updateTimerDisplay(0);
+      hintEl.textContent = "Click START DAILY. Come back tomorrow at the same time and click STOP.";
+    }
+  };
+
+  // ====== Init ======
+  // Refresh daily countdown every second (only updates panel)
+  setInterval(() => {
+    if (currentMode.key === "daily") refreshDailyPanel();
+  }, 1000);
+
+  // Start on 10s mode
+  setMode(modes.t10);
 </script>
 
 </body>
