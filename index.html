@@ -1,63 +1,124 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
+<meta charset="UTF-8" />
 <title>Stop the Time</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <style>
-body {
-  font-family: Arial, sans-serif;
-  text-align: center;
-  margin-top: 15vh;
-}
-h1 {
-  font-size: 64px;
-}
-button {
-  font-size: 22px;
-  padding: 12px 28px;
-  cursor: pointer;
-}
-#result {
-  font-size: 18px;
-  margin-top: 20px;
-}
+  body{
+    font-family: Arial, sans-serif;
+    text-align:center;
+    margin-top: 15vh;
+  }
+  h2{
+    font-size: 20px;
+    font-weight: 600;
+    margin: 0 0 14px 0;
+  }
+  h1{
+    font-size: 72px;
+    margin: 0 0 22px 0;
+    letter-spacing: 1px;
+  }
+  button{
+    font-size: 22px;
+    padding: 12px 28px;
+    cursor: pointer;
+  }
+  #result{
+    font-size: 18px;
+    margin-top: 18px;
+    min-height: 24px;
+  }
+  #share{
+    margin-top: 12px;
+    font-size: 16px;
+    min-height: 20px;
+  }
+  #share a{
+    text-decoration: none;
+  }
 </style>
 </head>
+
 <body>
 
 <h2>Stop the Time at exactly</h2>
-<h1>10.000</h1>
+<h1 id="timer">10.000</h1>
 
 <button id="btn">START</button>
 <p id="result"></p>
+<p id="share"></p>
 
 <script>
-let startTime = null;
-let interval = null;
-const target = 10.000;
+  let startTime = null;
+  let interval = null;
+  const target = 10.000;
 
-const btn = document.getElementById("btn");
-const resultEl = document.getElementById("result");
+  const timerEl = document.getElementById("timer");
+  const btn = document.getElementById("btn");
+  const resultEl = document.getElementById("result");
+  const shareEl = document.getElementById("share");
 
-btn.onclick = () => {
-  if (!startTime) {
-    startTime = performance.now();
-    btn.textContent = "STOP";
-    resultEl.textContent = "";
-    interval = setInterval(() => {
-      const t = (performance.now() - startTime) / 1000;
-      document.querySelector("h1").textContent = t.toFixed(3);
-    }, 10);
-  } else {
-    clearInterval(interval);
-    const finalTime = (performance.now() - startTime) / 1000;
-    const diff = (finalTime - target).toFixed(3);
-    resultEl.textContent = `Your error: ${diff} seconds`;
-    btn.textContent = "START";
-    startTime = null;
+  function setScoreUI(diffStr) {
+    const diffNum = Number(diffStr);
+    const absDiff = Math.abs(diffNum);
+
+    let color = "red";
+    let label = "Try again";
+
+    if (absDiff <= 0.050) {
+      color = "green";
+      label = "INSANE";
+    } else if (absDiff <= 0.150) {
+      color = "orange";
+      label = "Nice";
+    }
+
+    resultEl.innerHTML = `
+      <strong style="color:${color}">
+        ${label} – Your error: ${diffNum >= 0 ? "+" : ""}${diffStr} s
+      </strong>
+    `;
+
+    const shareText = `I stopped the timer with an error of ${diffNum >= 0 ? "+" : ""}${diffStr}s. Can you beat me? ${location.href}`;
+    shareEl.innerHTML =
+      `<a href="https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}" target="_blank" rel="noopener noreferrer">
+        Share your score
+      </a>`;
   }
-};
+
+  btn.onclick = () => {
+    if (!startTime) {
+      // START
+      startTime = performance.now();
+      btn.textContent = "STOP";
+      resultEl.textContent = "";
+      shareEl.textContent = "";
+      timerEl.textContent = "0.000";
+
+      interval = setInterval(() => {
+        const t = (performance.now() - startTime) / 1000;
+        timerEl.textContent = t.toFixed(3);
+      }, 10);
+
+    } else {
+      // STOP
+      clearInterval(interval);
+      const finalTime = (performance.now() - startTime) / 1000;
+      const diffStr = (finalTime - target).toFixed(3);
+
+      setScoreUI(diffStr);
+
+      btn.textContent = "START";
+      startTime = null;
+
+      // Auto-reset display back to 10.000 after 1s (feels cleaner)
+      setTimeout(() => {
+        if (!startTime) timerEl.textContent = "10.000";
+      }, 1000);
+    }
+  };
 </script>
 
 </body>
